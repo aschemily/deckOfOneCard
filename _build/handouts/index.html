@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Deck of One Card | Devmountain Foundations</title>
+
+    <link
+      href="_static/pygments.css"
+      rel="stylesheet"
+      type="text/css"
+    />
+    <link href="_static/devmountain.css" rel="stylesheet" type="text/css" />
+        <link rel="stylesheet" type="text/css" href="_static/graphviz.css" />
+
+    <script src="_static/pdfobject.min.js"></script>
+  </head>
+  <body>
+    <div id="handouts-container">
+      <header id="page-header">
+        <p id="project-title">Devmountain Foundations</p>
+        <p id="page-title">Deck of One Card</p>
+        <p id="backlink">
+          <a href="/"> &laquo; Back to Homepage </a>
+        </p>
+      </header>
+
+      <nav id="page-toc"><ul>
+<li><a class="reference internal" href="#">Deck of One Card</a><ul>
+<li><a class="reference internal" href="#part-zero-familiarity-with-the-documentation">Part Zero - Familiarity with the Documentation</a></li>
+<li><a class="reference internal" href="#part-one-storyboard-and-model">Part One - Storyboard and Model</a></li>
+<li><a class="reference internal" href="#part-two-card-controller-and-custom-error">Part Two - Card Controller and Custom Error</a></li>
+<li><a class="reference internal" href="#part-three-custom-error-alert-and-cardviewcontroller">Part Three - Custom Error Alert and CardViewController</a></li>
+</ul>
+</li>
+</ul>
+</nav>
+
+      <main id="page-content">  <section class="section" id="deck-of-one-card">
+<h1>Deck of One Card</h1>
+<p>DeckOfOneCard is a simple, one-button app that draws a card at random by fetching it from an online server. Though the interface is simple, students will be introduced to a handful of new concepts under the hood; including HTTP Requests, JSON decoding, closures and concurrency.</p>
+<section class="section" id="part-zero-familiarity-with-the-documentation">
+<h2>Part Zero - Familiarity with the Documentation</h2>
+<ul class="simple">
+<li><p>Find which endpoint to hit</p></li>
+<li><p>Look at a sample response (JSON)</p></li>
+<li><p>Based off the JSON, determine how to structure your model</p></li>
+</ul>
+<p>All data/images presented in the DeckOfOneCard app are retrieved from deckofcardsapi.com. In other words, your app is the front end and the server is the back end.</p>
+<p>Because your app depends on continuous communication with the server, it’s important to understand two things.</p>
+<ul class="simple">
+<li><p>How to talk to the server (which endpoint to hit).</p></li>
+<li><p>How to decode the response (the JSON).</p></li>
+</ul>
+<ol class="arabic simple">
+<li><p>Go to <code class="docutils literal notranslate"><span class="pre">http://deckofcardsapi.com</span></code> and look at the different endpoints available. You want to hit the “Draw a Card” endpoint. Modify the sample URL they provide so that it requests a “new” deck each time with a card count of 1. <a class="reference external" href="https://deckofcardsapi.com/api/deck/new/draw/?count=1" rel="noreferrer noopener" target="_blank">https://deckofcardsapi.com/api/deck/new/draw/?count=1</a></p></li>
+<li><p>Paste your new url into a web browser and you should get some JSON.</p></li>
+<li><p>On its own, unformatted JSON can be hard to read. Copy and paste it into an online JSON viewer. One can be found at <code class="docutils literal notranslate"><span class="pre">http://jsonviewer.stack.hu</span></code>.</p></li>
+<li><p>The top level dictionary should contain an array named “cards”. Look at the dictionary at index 0 in the array. It should have fields for “value”, “suit” and “image”. That is your model, the Card you want to draw each time a button is tapped.</p></li>
+</ol>
+</section>
+<section class="section" id="part-one-storyboard-and-model">
+<h2>Part One - Storyboard and Model</h2>
+<p><strong>Storyboard</strong></p>
+<ul class="simple">
+<li><p>Go to <code class="docutils literal notranslate"><span class="pre">Main.storyboard</span></code>, drag out a <code class="docutils literal notranslate"><span class="pre">UIImageView</span></code> and center it horizontally and vertically in the view controller.</p></li>
+<li><p>Constrain a <code class="docutils literal notranslate"><span class="pre">UILabel</span></code> horizontally centered directly above the image view. This label will hold both the value and suit of each drawn card.</p></li>
+<li><p>Lastly, center a <code class="docutils literal notranslate"><span class="pre">UIButton</span></code> at the bottom of the screen and title it “Draw”.</p></li>
+</ul>
+<p><strong>Model</strong></p>
+<ul class="simple">
+<li><p>Create a new file named <code class="docutils literal notranslate"><span class="pre">Card.swift</span></code> and declare a new struct Card that conforms to <code class="docutils literal notranslate"><span class="pre">Decodable</span></code>. Your app is a visual representation of the JSON so your model has to be structured accordingly.</p></li>
+<li><p>Add properties to your struct based off of the JSON you will be receiving. <code class="docutils literal notranslate"><span class="pre">String</span></code> properties named “value” and “suit” and a <code class="docutils literal notranslate"><span class="pre">URL</span></code> named “image”. We’ve identified your Card model in the JSON, but it’s embedded a few levels deep. You’ll have to model out the rest of the JSON structure in Swift so that it can decode all the way down to the Card.</p></li>
+<li><p>One the same file, declare a new struct <code class="docutils literal notranslate"><span class="pre">TopLevelObject</span></code> which also conforms to Decodable. The JSON has an array named “cards” so you need to do the same in Swift.</p></li>
+<li><p>Give your new struct a single property <code class="docutils literal notranslate"><span class="pre">cards:</span> <span class="pre">[Card]</span></code>. You have now modeled out the entire JSON structure and are ready to request live data from the server.</p></li>
+</ul>
+</section>
+<section class="section" id="part-two-card-controller-and-custom-error">
+<h2>Part Two - Card Controller and Custom Error</h2>
+<p><strong>CardController - Fetch Card</strong></p>
+<ul class="simple">
+<li><p>Create a new Swift file and class named <code class="docutils literal notranslate"><span class="pre">CardController</span></code>.</p></li>
+</ul>
+<p>You won’t be holding any Card objects on the CardController, so you won’t need a singleton.</p>
+<ul class="simple">
+<li><p>Declare a static function to fetch a card from the server. It will take in a single argument, a completion block <code class="docutils literal notranslate"><span class="pre">(Result</span> <span class="pre">&lt;Card,</span> <span class="pre">CardError&gt;)</span> <span class="pre">-&gt;</span> <span class="pre">Void</span></code>.</p></li>
+</ul>
+<div class="highlight-swift notranslate"><div class="highlight"><pre><span></span><span class="kd">static</span> <span class="kd">func</span> <span class="nf">fetchCard</span><span class="p">(</span><span class="n">completion</span><span class="p">:</span> <span class="p">@</span><span class="n">escaping</span> <span class="p">(</span><span class="n">Result</span> <span class="p">&lt;</span><span class="n">Card</span><span class="p">,</span> <span class="n">CardError</span><span class="p">&gt;)</span> <span class="p">-&gt;</span> <span class="nb">Void</span><span class="p">)</span> <span class="p">{</span>
+  <span class="c1">// 1 - Prepare URL</span>
+
+  <span class="c1">// 2 - Contact server</span>
+
+  <span class="c1">// 3 - Handle errors from the server</span>
+
+  <span class="c1">// 4 - Check for json data</span>
+
+  <span class="c1">// 5 - Decode json into a Card</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>The compiler will complain about the nonexistent error type. Create a new Swift file and enum named <code class="docutils literal notranslate"><span class="pre">CardError</span></code> that conforms to <code class="docutils literal notranslate"><span class="pre">LocalizedError</span></code>. We will use this type to tell the user what went wrong in the event we fail to produce a Card from the server.</p></li>
+<li><p>In <code class="docutils literal notranslate"><span class="pre">fetchCard(completion:)</span></code>, use a guard statement to initialize a new <code class="docutils literal notranslate"><span class="pre">URL(string:)</span></code> and pass in the endpoint you determined during “Part Zero”.</p></li>
+<li><p>Add a new case <code class="docutils literal notranslate"><span class="pre">invalidURL</span></code> to your <code class="docutils literal notranslate"><span class="pre">CardError</span></code> enum.</p></li>
+<li><p>For the <code class="docutils literal notranslate"><span class="pre">else</span></code> portion of your guard statement, make sure to call the completion (failure) and then pass in the reason why. <code class="docutils literal notranslate"><span class="pre">else</span> <span class="pre">{</span> <span class="pre">return(completion(.failure(.invalidURL)))</span> <span class="pre">}</span></code></p></li>
+<li><p>Next, call <code class="docutils literal notranslate"><span class="pre">URLSession.shared.dataTast(with:completion:)</span></code> and pass in the URL you unwrapped. Name the completion arguments <code class="docutils literal notranslate"><span class="pre">data</span></code>, <code class="docutils literal notranslate"><span class="pre">_</span></code>, <code class="docutils literal notranslate"><span class="pre">error</span></code>.</p></li>
+</ul>
+<div class="highlight-swift notranslate"><div class="highlight"><pre><span></span><span class="n">URLSession</span><span class="p">.</span><span class="n">shared</span><span class="p">.</span><span class="n">dataTask</span><span class="p">(</span><span class="n">with</span><span class="p">:</span> <span class="n">url</span><span class="p">)</span> <span class="p">{</span> <span class="n">data</span><span class="p">,</span> <span class="kc">_</span><span class="p">,</span> <span class="n">error</span> <span class="k">in</span>
+  <span class="c1">// 3 - Handle errors from the server</span>
+
+  <span class="c1">// 4 - Check for json data</span>
+
+  <span class="c1">// 5 - Decode json into a Card</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Use an if statement to unwrap the potential error. You need to add a new case to <code class="docutils literal notranslate"><span class="pre">CardError</span></code> that allows the passage of Apple’s error: <code class="docutils literal notranslate"><span class="pre">case</span> <span class="pre">thrownError(Error)</span></code>. In your if statement, print the error and then call completion (failure). <code class="docutils literal notranslate"><span class="pre">return</span> <span class="pre">completion(.failure(.thrownError(unwrappedError)))</span></code>.</p></li>
+<li><p>Use a guard statement to unwrap the data. In the <code class="docutils literal notranslate"><span class="pre">else</span></code> statement, complete (failure) with <code class="docutils literal notranslate"><span class="pre">case</span> <span class="pre">.noData</span></code>.</p></li>
+<li><p>Open up a <code class="docutils literal notranslate"><span class="pre">do</span> <span class="pre">-</span> <span class="pre">catch</span></code> block where you will decode the received data.</p></li>
+<li><p>In the <code class="docutils literal notranslate"><span class="pre">do</span></code> portion, use a JSONDecoder to decode a <code class="docutils literal notranslate"><span class="pre">TopLevelObject</span></code>. It’s a throwing function, so it has to be marked with <code class="docutils literal notranslate"><span class="pre">try</span></code>.</p></li>
+</ul>
+<div class="highlight-swift notranslate"><div class="highlight"><pre><span></span><span class="kd">let</span> <span class="nv">topLevelObject</span> <span class="p">=</span> <span class="k">try</span> <span class="n">JSONDecoder</span><span class="p">().</span><span class="n">decode</span><span class="p">(</span><span class="n">TopLevelObject</span><span class="p">.</span><span class="kc">self</span><span class="p">,</span> <span class="n">from</span><span class="p">:</span> <span class="n">data</span><span class="p">)</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Unwrap the first card on your topLevelObject’s array. If the unwrap fails, complete (failure) with <code class="docutils literal notranslate"><span class="pre">.noData</span></code>.</p></li>
+<li><p>If the unwrap is successful, complete successfully with the card. <code class="docutils literal notranslate"><span class="pre">return</span> <span class="pre">completion(.success(card))</span></code>.</p></li>
+<li><p>Remember to print the error and complete (failure) in the <code class="docutils literal notranslate"><span class="pre">catch</span></code> portion.</p></li>
+<li><p>Call <code class="docutils literal notranslate"><span class="pre">.resume()</span></code> on your data task to finish off the <code class="docutils literal notranslate"><span class="pre">fetchCard(completion:)</span></code> function.</p></li>
+</ul>
+<p><strong>CardController - Fetch Image</strong></p>
+<ul class="simple">
+<li><p>Declare a static function that takes in a Card and completion block of type <code class="docutils literal notranslate"><span class="pre">(Result</span> <span class="pre">&lt;UIImage,</span> <span class="pre">CardError&gt;)</span> <span class="pre">-&gt;</span> <span class="pre">Void</span></code>.</p></li>
+</ul>
+<div class="highlight-swift notranslate"><div class="highlight"><pre><span></span><span class="kd">static</span> <span class="kd">func</span> <span class="nf">fetchImage</span><span class="p">(</span><span class="k">for</span> <span class="n">card</span><span class="p">:</span> <span class="n">Card</span><span class="p">,</span> <span class="n">completion</span><span class="p">:</span> <span class="p">@</span><span class="n">escaping</span> <span class="p">(</span><span class="n">Result</span> <span class="p">&lt;</span><span class="bp">UIImage</span><span class="p">,</span> <span class="n">CardError</span><span class="p">&gt;)</span> <span class="p">-&gt;</span> <span class="nb">Void</span><span class="p">)</span> <span class="p">{</span>
+  <span class="c1">// 1 - Prepare URL</span>
+
+  <span class="c1">// 2 - Contact server</span>
+
+  <span class="c1">// 3 - Handle errors from the server</span>
+
+  <span class="c1">// 4 - Check for image data</span>
+
+  <span class="c1">// 5 - Initialize an image from the data</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Just as before, you need a <code class="docutils literal notranslate"><span class="pre">URL</span></code> to contact the server at. This time you will pull it off of the card that is passed in.</p></li>
+<li><p>Declare another <code class="docutils literal notranslate"><span class="pre">dataTask</span></code> and pass in the url. Give the same argument names as before. <code class="docutils literal notranslate"><span class="pre">data</span></code>, <code class="docutils literal notranslate"><span class="pre">_</span></code>, <code class="docutils literal notranslate"><span class="pre">error</span></code>.</p></li>
+<li><p>Use an if statement to handle the error and call completion (failure) <code class="docutils literal notranslate"><span class="pre">.thrownError(error)</span></code> in the event of an error.</p></li>
+<li><p>Guard unwrap the data and call completion (failure) <code class="docutils literal notranslate"><span class="pre">.noData</span></code> if it’s <code class="docutils literal notranslate"><span class="pre">nil</span></code>.</p></li>
+<li><p>Initialize a <code class="docutils literal notranslate"><span class="pre">UIImage</span></code> from the data using a guard statement and complete with <code class="docutils literal notranslate"><span class="pre">.unableToDecode</span></code> if it fails. <code class="docutils literal notranslate"><span class="pre">guard</span> <span class="pre">let</span> <span class="pre">image</span> <span class="pre">=</span> <span class="pre">UIImage(data:</span> <span class="pre">data)</span> <span class="pre">else</span> <span class="pre">{</span> <span class="pre">return</span> <span class="pre">completion(.failure(.unableToDecode))</span> <span class="pre">}</span></code></p></li>
+<li><p>If it succeeds, complete with the image. Don’t forget to call <code class="docutils literal notranslate"><span class="pre">.resume()</span></code> on your data task.</p></li>
+</ul>
+<p><strong>CardError</strong></p>
+<ul class="simple">
+<li><p>Each case on your custom error type should come with a description. It should clearly and simply explain to the user what went wrong or how to troubleshoot.</p></li>
+<li><p>In CardError, create a computed property <code class="docutils literal notranslate"><span class="pre">var</span> <span class="pre">errorDescription:</span> <span class="pre">String?</span> <span class="pre">{</span></code>.</p></li>
+<li><p>Within the block, write a switch statement, <code class="docutils literal notranslate"><span class="pre">switch</span> <span class="pre">self</span> <span class="pre">{</span></code>, that returns a unique <code class="docutils literal notranslate"><span class="pre">String</span></code> description for each case. The finished product should look something like this:</p></li>
+</ul>
+<div class="highlight-swift notranslate"><div class="highlight"><pre><span></span><span class="kd">enum</span> <span class="nc">CardError</span><span class="p">:</span> <span class="n">LocalizedError</span> <span class="p">{</span>
+  <span class="k">case</span> <span class="n">invalidURL</span>
+  <span class="k">case</span> <span class="n">thrownError</span><span class="p">(</span><span class="n">Error</span><span class="p">)</span>
+  <span class="k">case</span> <span class="n">noData</span>
+  <span class="k">case</span> <span class="n">unableToDecode</span>
+
+  <span class="c1">// Give the user whatever information you think they should know. Feel free to write your own descriptions.</span>
+  <span class="kd">var</span> <span class="nv">errorDescription</span><span class="p">:</span> <span class="nb">String</span><span class="p">?</span> <span class="p">{</span>
+      <span class="k">switch</span> <span class="kc">self</span> <span class="p">{</span>
+      <span class="k">case</span> <span class="p">.</span><span class="n">invalidURL</span><span class="p">:</span>
+          <span class="k">return</span> <span class="s">&quot;Internal error. Please update Deck of One Card or contact support.&quot;</span>
+      <span class="k">case</span> <span class="p">.</span><span class="n">thrownError</span><span class="p">(</span><span class="kd">let</span> <span class="nv">error</span><span class="p">):</span>
+          <span class="k">return</span> <span class="n">error</span><span class="p">.</span><span class="n">localizedDescription</span>
+      <span class="k">case</span> <span class="p">.</span><span class="n">noData</span><span class="p">:</span>
+          <span class="k">return</span> <span class="s">&quot;The server responded with no data.&quot;</span>
+      <span class="k">case</span> <span class="p">.</span><span class="n">unableToDecode</span><span class="p">:</span>
+          <span class="k">return</span> <span class="s">&quot;The server responded with bad data.&quot;</span>
+      <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section class="section" id="part-three-custom-error-alert-and-cardviewcontroller">
+<h2>Part Three - Custom Error Alert and CardViewController</h2>
+<p><strong>Custom Error Alert</strong></p>
+<ul class="simple">
+<li><p>Create a new Swift file called <code class="docutils literal notranslate"><span class="pre">UIViewControllerExtension</span></code>.</p></li>
+<li><p>Import <code class="docutils literal notranslate"><span class="pre">UIKit</span></code> and extend <code class="docutils literal notranslate"><span class="pre">UIViewController</span></code>.</p></li>
+<li><p>Create a function that takes in a <code class="docutils literal notranslate"><span class="pre">LocalizedError</span></code> and presents a <code class="docutils literal notranslate"><span class="pre">UIAlertController</span></code> with the error’s <code class="docutils literal notranslate"><span class="pre">errorDescription</span></code>.</p></li>
+</ul>
+<div class="highlight-swift notranslate"><div class="highlight"><pre><span></span><span class="kd">extension</span> <span class="bp">UIViewController</span> <span class="p">{</span>
+
+    <span class="kd">func</span> <span class="nf">presentErrorToUser</span><span class="p">(</span><span class="n">localizedError</span><span class="p">:</span> <span class="n">LocalizedError</span><span class="p">)</span> <span class="p">{</span>
+
+        <span class="c1">// Feel free to customize the alert controller.</span>
+        <span class="kd">let</span> <span class="nv">alertController</span> <span class="p">=</span> <span class="bp">UIAlertController</span><span class="p">(</span><span class="n">title</span><span class="p">:</span> <span class="s">&quot;Error&quot;</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="n">localizedError</span><span class="p">.</span><span class="n">errorDescription</span><span class="p">,</span> <span class="n">preferredStyle</span><span class="p">:</span> <span class="p">.</span><span class="n">actionSheet</span><span class="p">)</span>
+        <span class="kd">let</span> <span class="nv">dismissAction</span> <span class="p">=</span> <span class="bp">UIAlertAction</span><span class="p">(</span><span class="n">title</span><span class="p">:</span> <span class="s">&quot;Ok&quot;</span><span class="p">,</span> <span class="n">style</span><span class="p">:</span> <span class="p">.</span><span class="n">cancel</span><span class="p">)</span>
+        <span class="n">alertController</span><span class="p">.</span><span class="n">addAction</span><span class="p">(</span><span class="n">dismissAction</span><span class="p">)</span>
+        <span class="n">present</span><span class="p">(</span><span class="n">alertController</span><span class="p">,</span> <span class="n">animated</span><span class="p">:</span> <span class="kc">true</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Because this function exists on the <code class="docutils literal notranslate"><span class="pre">UIViewController</span></code> class itself, you will be able to call it from any view controller in an app. Consider saving your extension as a code snippet for quick access in future projects.</p></li>
+</ul>
+<p><strong>CardViewController</strong></p>
+<ul class="simple">
+<li><p>Create a new Cocoa Touch class called <code class="docutils literal notranslate"><span class="pre">CardViewController</span></code>.</p></li>
+<li><p>Subclass the view controller on your storyboard and connect outlets for the image and label.</p></li>
+<li><p>Create an action for the draw button.</p></li>
+<li><p>Whenever the user taps the draw button, they expect a new card to appear. Inside of your action, call <code class="docutils literal notranslate"><span class="pre">CardController.fetchCard(completion:)</span></code>, press “return” and name the argument <code class="docutils literal notranslate"><span class="pre">result</span></code>.</p></li>
+<li><p>Remember that our completion handler is an <code class="docutils literal notranslate"><span class="pre">escaping</span></code> closure, so we need to create a capture list <code class="docutils literal notranslate"><span class="pre">[weak</span> <span class="pre">self]</span></code> to avoid memory leaks.</p></li>
+</ul>
+<div class="highlight-swift notranslate"><div class="highlight"><pre><span></span><span class="kr">@IBAction</span> <span class="kd">func</span> <span class="nf">drawButtonTapped</span><span class="p">(</span><span class="kc">_</span> <span class="n">sender</span><span class="p">:</span> <span class="bp">UIButton</span><span class="p">)</span> <span class="p">{</span>
+
+  <span class="n">CardController</span><span class="p">.</span><span class="n">fetchCard</span> <span class="p">{</span> <span class="p">[</span><span class="kr">weak</span> <span class="kc">self</span><span class="p">]</span> <span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="k">in</span>
+
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Each request has two possible “results”. Either success or failure. Inside the fetch completion, write a <code class="docutils literal notranslate"><span class="pre">switch</span></code> statement on <code class="docutils literal notranslate"><span class="pre">result</span></code> which covers both cases.</p>
+<div class="highlight-swift notranslate"><div class="highlight"><pre><span></span><span class="k">switch</span> <span class="n">result</span> <span class="p">{</span>
+  <span class="k">case</span> <span class="p">.</span><span class="n">success</span><span class="p">(</span><span class="kd">let</span> <span class="nv">card</span><span class="p">):</span>
+
+  <span class="k">case</span> <span class="p">.</span><span class="n">failure</span><span class="p">(</span><span class="kd">let</span> <span class="nv">error</span><span class="p">):</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>For failure, call the function from your extension, <code class="docutils literal notranslate"><span class="pre">self?.presentErrorToUser(localizedError:</span> <span class="pre">error)</span></code>.</p></li>
+<li><p>You still need to fetch the card’s image before you can update the interface. Create a new function <code class="docutils literal notranslate"><span class="pre">func</span> <span class="pre">fetchImageAndUpdateViews(for</span> <span class="pre">card:</span> <span class="pre">Card)</span></code> and call it in the success case.</p></li>
+<li><p>Inside of the new function, fetch the image from your card controller.</p></li>
+<li><p>Create another <code class="docutils literal notranslate"><span class="pre">switch</span></code> statement on <code class="docutils literal notranslate"><span class="pre">result</span></code> with both cases. This time the success is an image.</p></li>
+</ul>
+<div class="highlight-swift notranslate"><div class="highlight"><pre><span></span><span class="kd">func</span> <span class="nf">fetchImageAndUpdateViews</span><span class="p">(</span><span class="k">for</span> <span class="n">card</span><span class="p">:</span> <span class="n">Card</span><span class="p">)</span> <span class="p">{</span>
+
+  <span class="n">CardController</span><span class="p">.</span><span class="n">fetchImage</span><span class="p">(</span><span class="k">for</span><span class="p">:</span> <span class="n">card</span><span class="p">)</span> <span class="p">{</span> <span class="p">[</span><span class="kr">weak</span> <span class="kc">self</span><span class="p">]</span> <span class="n">result</span> <span class="k">in</span>
+
+  <span class="k">switch</span> <span class="n">result</span> <span class="p">{</span>
+      <span class="k">case</span> <span class="p">.</span><span class="n">success</span><span class="p">(</span><span class="kd">let</span> <span class="nv">image</span><span class="p">):</span>
+
+      <span class="k">case</span> <span class="p">.</span><span class="n">failure</span><span class="p">(</span><span class="kd">let</span> <span class="nv">error</span><span class="p">):</span>
+
+      <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Present the error if there is one, otherwise, update the label with the card’s suit and value <code class="docutils literal notranslate"><span class="pre">\(card.value)</span> <span class="pre">of</span> <span class="pre">\(card.suit)</span></code>.</p></li>
+<li><p>Update the image view with the image.</p></li>
+<li><p>If you were to run the app right now, it would crash after you pushed the draw button. Whenever updating the UI after a fetch, you must return to the main thread.</p></li>
+<li><p>Wrap the switch statements in both of your fetch function inside of an <code class="docutils literal notranslate"><span class="pre">async</span></code> block.</p></li>
+</ul>
+<div class="highlight-swift notranslate"><div class="highlight"><pre><span></span><span class="n">DispatchQueue</span><span class="p">.</span><span class="n">main</span><span class="p">.</span><span class="n">async</span> <span class="p">{</span>
+  <span class="k">switch</span> <span class="n">result</span> <span class="p">{</span>
+      <span class="c1">// etc</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>You should have a working project. Make sure to push your work to GitHub.</p>
+</section>
+</section>
+ 
+      </main>
+
+      <footer id="page-footer">
+        <p>&copy; 2021 Devmountain</p>
+      </footer>
+    </div>
+
+    <script src="_static/main.js"></script>
+      <script src="_static/jquery.js"></script>
+      <script src="_static/underscore.js"></script>
+      <script src="_static/doctools.js"></script>
+  </body>
+</html>
